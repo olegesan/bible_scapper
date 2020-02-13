@@ -6,9 +6,12 @@ import time
 
 
 
-version_code=100
-link = f'https://www.bible.com/bible/{version_code}/'
-version = "NASB"
+# version_code=100
+global version_code
+global version
+global link 
+versions_needed = ['NIV', "ASV", 'KJV']
+
 def getVersions():
     versions = []
     with open('versions.html', 'r') as file:
@@ -19,7 +22,7 @@ def getVersions():
         version_code = re.search(r'1\.(.*)',version.attrs['href']).group(1)
         code_number, version_name = re.findall(r'^(\d{1,4}):(.*)', text, re.DOTALL)[0]
         versions.append([version_code,code_number,version_name])
-    print(versions)
+    return versions
 
 
 
@@ -156,6 +159,19 @@ def getBible():
     bible_over = time.perf_counter() - bible_counter
     print(f"We are almost done, all verses have been scrapped.\nTime:{bible_over}\nLet's save out bible as Bible{version}.json")
     open(f'Bible_{version}.json', 'x').write(json.dumps(bible))
-getBible()
 
 
+def multipleVersions():
+    all_versions = getVersions()
+    for version_name in versions_needed:
+          for version_list in all_versions:
+              if version_name in version_list:
+                  global version 
+                  global link 
+                  global version_code 
+                  version = version_list[0]
+                  version_code = version_list[1]
+                  link = f'https://www.bible.com/bible/{version_code}/'
+                  getBible()
+
+multipleVersions()
