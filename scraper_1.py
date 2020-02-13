@@ -6,9 +6,21 @@ import time
 
 
 
-version_code=59
+version_code=100
 link = f'https://www.bible.com/bible/{version_code}/'
-version = "ESV"
+version = "NASB"
+def getVersions():
+    versions = []
+    with open('versions.html', 'r') as file:
+        soup = bs(file.read(), 'html.parser')
+    versions_raw = soup.find_all('a')
+    for version in versions_raw:
+        text = version.attrs['data-vars-event-label']
+        version_code = re.search(r'1\.(.*)',version.attrs['href']).group(1)
+        code_number, version_name = re.findall(r'^(\d{1,4}):(.*)', text, re.DOTALL)[0]
+        versions.append([version_code,code_number,version_name])
+    print(versions)
+
 
 
 
@@ -114,6 +126,12 @@ def getBook(book):
 
     return bible_book
 
+def getCopyRight():
+    page = requests.get(f'{link}Gen.1.{version}')   
+    page_soup = bs(page.text,'html.parser')
+    return page_soup.find_all('div',class_="lh-copy")[0].find('p').get_text()
+
+
 def getBible():
     bible_counter = time.perf_counter()
     print("Let's first get all the Bible books, start a stopwatch")
@@ -133,9 +151,11 @@ def getBible():
             }
         }
         bible[book]['chapters'].update(book_chapters)
+    bible['translation_copyRight'] = getCopyRight()
+    bible['version'] = version
     bible_over = time.perf_counter() - bible_counter
     print(f"We are almost done, all verses have been scrapped.\nTime:{bible_over}\nLet's save out bible as Bible{version}.json")
-    open(f'Bible{version}.json', 'x').write(json.dumps(bible))
-
-    
+    open(f'Bible_{version}.json', 'x').write(json.dumps(bible))
 getBible()
+
+
