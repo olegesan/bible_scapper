@@ -3,14 +3,37 @@ import re
 import json
 from bs4 import BeautifulSoup as bs
 import time
+from bible_versions_eng import bible_versions_eng
+
+def main():
+
+    print(f"{stars}\nWelcome to bible_scraper shell interface\n{stars}")
+    version = input("\nType the code of desired version, i.e. ESV for English Standard Version :").upper()
+    while True:
+        if version in bible_versions_eng:
+            break
+        else:
+            print('The code is incorrect, cannot find such version, try again.')
+            version = input("\nType the code of desired version, i.e. ESV for English Standard Version :\n").upper()
+    versions = getVersions()
+    for option in versions:
+        if version in option:
+            correct = input(f"\nFull name of your version is {option[2]}, is it correct? type y/n ").lower()
+            if correct == 'y':
+                global versions_needed
+                versions_needed = [version]
+                multipleVersions()
+            elif correct == 'n':
+                print('Try again\nExiting pogram')
+            else:
+                print('Wrong input\nExiting pogram')
 
 
-
-# version_code=100
 global version_code
 global version
 global link 
-versions_needed = [ "ASV", 'KJV']
+stars = '*************************************'
+global versions_needed
 
 def getVersions():                                                      #fetches all the codes and versions avaliable for english at bible.com
     versions = []
@@ -21,7 +44,7 @@ def getVersions():                                                      #fetches
         text = version.attrs['data-vars-event-label']
         version_code = re.search(r'1\.(.*)',version.attrs['href']).group(1)
         code_number, version_name = re.findall(r'^(\d{1,4}):(.*)', text, re.DOTALL)[0]
-        versions.append([version_code,code_number,version_name])                            #returns a list like ['ESV',59,'English Standard Vesion']
+        versions.append([version_code,code_number, version_name])                            #returns a list like ['ESV',59,'English Standard Vesion']
     return versions
 
 
@@ -154,16 +177,21 @@ def getBible():
             }
         }
         bible[book]['chapters'].update(book_chapters)
-    bible['translation_copyRight'] = getCopyRight()
+    try:
+        bible['translation_copyRight'] = getCopyRight()
+    except:
+        print('No copyright info for this eversion')
     bible['version'] = version
     bible_over = time.perf_counter() - bible_counter
     print(f"We are almost done, all verses have been scrapped.\nTime:{bible_over}\nLet's save our bible as Bible{version}.json")
     try:
         open(f'Bible_{version}.json', 'x').write(json.dumps(bible))
+        print(f'Success, you Bible_{version}.json has been successfully created\n{stars}')
     except FileExistsError:
         print(f'oops, seems like you already have a file named Bible_{version}.json in this folder\ncannot create it')
     except:
         print('there was an error, something went wrong')
+    
 
 
 
@@ -179,5 +207,7 @@ def multipleVersions():                                                 #functio
                   version_code = version_list[1]
                   link = f'https://www.bible.com/bible/{version_code}/'
                   getBible()
+main()
 
-multipleVersions()
+
+
