@@ -10,9 +10,9 @@ import time
 global version_code
 global version
 global link 
-versions_needed = ['NIV', "ASV", 'KJV']
+versions_needed = [ "ASV", 'KJV']
 
-def getVersions():
+def getVersions():                                                      #fetches all the codes and versions avaliable for english at bible.com
     versions = []
     with open('versions.html', 'r') as file:
         soup = bs(file.read(), 'html.parser')
@@ -21,7 +21,7 @@ def getVersions():
         text = version.attrs['data-vars-event-label']
         version_code = re.search(r'1\.(.*)',version.attrs['href']).group(1)
         code_number, version_name = re.findall(r'^(\d{1,4}):(.*)', text, re.DOTALL)[0]
-        versions.append([version_code,code_number,version_name])
+        versions.append([version_code,code_number,version_name])                            #returns a list like ['ESV',59,'English Standard Vesion']
     return versions
 
 
@@ -157,11 +157,17 @@ def getBible():
     bible['translation_copyRight'] = getCopyRight()
     bible['version'] = version
     bible_over = time.perf_counter() - bible_counter
-    print(f"We are almost done, all verses have been scrapped.\nTime:{bible_over}\nLet's save out bible as Bible{version}.json")
-    open(f'Bible_{version}.json', 'x').write(json.dumps(bible))
+    print(f"We are almost done, all verses have been scrapped.\nTime:{bible_over}\nLet's save our bible as Bible{version}.json")
+    try:
+        open(f'Bible_{version}.json', 'x').write(json.dumps(bible))
+    except FileExistsError:
+        print(f'oops, seems like you already have a file named Bible_{version}.json in this folder\ncannot create it')
+    except:
+        print('there was an error, something went wrong')
 
 
-def multipleVersions():
+
+def multipleVersions():                                                 #function that get's all the version specified by the version code
     all_versions = getVersions()
     for version_name in versions_needed:
           for version_list in all_versions:
