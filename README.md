@@ -11,9 +11,7 @@ It follows the following structure:
         1.1.1.1 Verses by numbe like 'verse_1'
       1.1.1.2 'Total' : contains total number of chapters in the book
 ## Usage
-- a
-  -b
-    -d
+
 to be updated
 ## Updates
 - add interactive shell interface.
