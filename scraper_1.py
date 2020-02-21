@@ -10,26 +10,22 @@ from bible_scraper_supplement import bible_versions_eng, bible_books
 def main():
     print(f"{stars}\nWelcome to bible_scraper shell interface\n{stars}")
     while True:
-        version = input("\nType the code of desired version, i.e. ESV for English Standard Version :").upper()
-        while True:
-            if version in bible_versions_eng:
-                break
-            else:
-                print('The code is incorrect, cannot find such version, try again.')
-                version = input("\nType the code of desired version, i.e. ESV for English Standard Version :\n").upper()
-        versions = getVersions()
-        for option in versions:
-            if version in option:
-                correct = input(f"\nFull name of your version is {option[2]}, is it correct? type y/n ").lower()
-                if correct == 'y':
-                    global versions_needed
-                    versions_needed = [version]
-                    multipleVersions()
-                elif correct == 'n':
-                    return
-                    print('Try again\n')
+        versions = list(input("\nType the codes of desired version, i.e. ESV, KJV for English Standard Version\nand King \
+James Version :").upper().replace(' ', '').split(','))
+        # print(versions)
+        for idx, version in enumerate(versions):
+            while True:
+                if version in bible_versions_eng:
+                    break
                 else:
-                    print('Wrong input\nTry again')
+                    print(f'The code "{version}" is incorrect, cannot find such version, try again.')
+                    version = input("\nType the code of desired version, i.e. ESV for English Standard Version :\n").upper()
+                    versions[idx]=version
+            # versions_info = getVersions()
+        print(versions)
+        global versions_needed
+        versions_needed = versions
+        multipleVersions()
         again = input("Do you want to get another version? y/n \n")
         if again.lower() == 'n':
             print("Pleasure to have business with you! Have a good day.")
@@ -79,7 +75,7 @@ def addNumberOfChapters(bible):  # Accepts a fictionary that has bible books nam
     for book in bible.keys():
         current_chapter = 1
         last_chapter = 0
-        bible[book]["chapters"]["total"] = 0
+        bible['books'][book]["chapters"]["total"] = 0
         while not current_chapter < last_chapter:
             current_chapter = last_chapter + 1  # at bible.com if chapter number overflows it sends it back to number 1
             req = requests.get(f'{link}{book}.{current_chapter}.{version}')
@@ -89,7 +85,7 @@ def addNumberOfChapters(bible):  # Accepts a fictionary that has bible books nam
             if (
                     current_chapter <= last_chapter):  # if last chapter == current chapter -> there is only one chapter in the book
                 break
-            bible[book]["chapters"]["total"] += 1
+            bible['books'][book]["chapters"]["total"] += 1
             last_chapter = current_chapter
 
 
@@ -135,15 +131,20 @@ def getAllVersesInChapter(book, chapter):
     verse_counter = 1  # keeping track of current verse
     allVerses = {}
     for verse in verses:
-        verse_text = verse.get_text()
-        if verse_text[0:len(str(verse_counter + 1))] == str(
-                verse_counter + 1):  # checking the beginning of the verse piece to for a number, if
-            verse_counter += 1  # number matches the next next verse counter, then we are on
-        if verse_text[0:len(str(verse_counter))] == str(
-                verse_counter):  # a new verse, otherwise it is the another piece of the same
-            allVerses[f'verse_{verse_counter}'] = verse_text.lstrip('0123456789').replace('\u2014', '-')
-        else:
-            allVerses[f'verse_{verse_counter}'] += verse_text.replace('\u2014', '-')
+        content = verse.find_all(attrs={"class":["content","label"]})
+        for text in content:
+            verse_text = text.get_text()
+
+            if verse_text[0:len(str(verse_counter + 1))] == str(
+                    verse_counter + 1):  # checking the beginning of the verse piece to for a number, if
+                verse_counter += 1  # number matches the next next verse counter, then we are on
+            if verse_text=="#":
+                allVerses[f'{verse_counter}'] += " "
+            elif verse_text[0:len(str(verse_counter))] == str(
+                    verse_counter):  # a new verse, otherwise it is the another piece of the same
+                allVerses[f'{verse_counter}'] = verse_text.lstrip('0123456789').replace('\u2014', '-')
+            else:
+                allVerses[f'{verse_counter}'] += verse_text.replace('\u2014', '-')
     chapter_over = time.perf_counter() - chapter_counter
     print(f'{book} {chapter} done in {chapter_over}')
     return allVerses
@@ -178,22 +179,25 @@ def getBible():
     bible_counter = time.perf_counter()
     print("Let's first get all the Bible books, start a stopwatch")
     books_counter = time.perf_counter()
-    bible = bible_books.copy()  # used to be getBibleBooks() #getting the names of bible books
+    bible = {
+        "books": bible_books.copy()
+    }  # used to be getBibleBooks() #getting the names of bible books
 
     books_over = time.perf_counter() - books_counter
     print(f"Got all the books in {books_over}")
-    for book in bible.keys():
+    for book in bible['books'].keys():
         print(f"Now let's get every chapter in {book}")
         book_counter = time.perf_counter()
         book_chapters = getBook(book)  # getting total number of chapters in the book
         book_over = time.perf_counter() - book_counter
         print(f"It wasn't so bad, was it? Only {book_over}")
-        bible[book] = {
+        bible['books'][book].update({
             'chapters': {
                 'total': len(book_chapters.keys())
             }
-        }
-        bible[book]['chapters'].update(book_chapters)
+        })
+        bible['books'][book]['chapters'].update(book_chapters)
+        # break #delete this one
     try:
         bible['translation_copyRight'] = getCopyRight()
     except:
